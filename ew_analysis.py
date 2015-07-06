@@ -103,9 +103,9 @@ def load_equivalent_widths(filename, metadata=None):
             EW_BOL = np.nan
         if 0 >= EW_ULB:
             EW_ULB = np.nan
-        if -100 >= log_eps_BOL:
+        if 0 >= log_eps_BOL:
             log_eps_BOL = np.nan
-        if -100 >= log_eps_ULB:
+        if 0 >= log_eps_ULB:
             log_eps_ULB = np.nan
 
         # Evaluate species.
@@ -184,8 +184,8 @@ if __name__ == "__main__":
         assert len(star[2]) == len(stars[0][2])
 
 
-    PHOTOSPHERES = "Stagger-h"
-    DESCRIPTION = "3D_ROSSELAND_ULB_DEFAULT"
+    PHOTOSPHERES = "MARCS"
+    DESCRIPTION = "1D_MARCS_ULB_DEFAULT"
     EWS = "EW_ULB"
 
 
@@ -193,7 +193,8 @@ if __name__ == "__main__":
     problematic = []
     for star in stars:
         try:
-            analysed = atomic_abundances(star, PHOTOSPHERES, DESCRIPTION, EWS)
+            analysed = atomic_abundances(star, PHOTOSPHERES, DESCRIPTION, EWS,
+                damping=1)
         except oracle.synthesis.moog.MOOGException:
             print("Failed on {}".format(star[0]))
             problematic.append(star[0])
