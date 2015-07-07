@@ -172,7 +172,38 @@ def atomic_abundances(star, photosphere_kind, descr_prefix, ew_column, **kwargs)
     return (star_name, sp, updated_line_list, metadata)
 
 
+def analyse_all_stars(stars, photospheres, description, ews, **kwargs):
+
+    debug = kwargs.pop("debug", False)
+    results = []
+    problematic = []
+
+    for star in stars:
+        print("Star {}".format(star[0]))
+
+        try:
+            result = atomic_abundances(star, photospheres, description, ews,
+                debug=debug, **kwargs)
+        except oracle.synthesis.moog.MOOGException:
+            print("Failed on {}".format(star[0]))
+            problematic.append(star[0])
+            if debug:
+                raise
+            continue
+
+        else:
+            output_filename = "data/{star}_{descr}.pkl".format(star=star[0],
+                descr=description)
+            print("Written to output filename {}".format(output_filename))
+            with open(output_filename, "wb") as fp:
+                pickle.dump(result, fp, -1)
+            results.append(result)
+
+    return (results, problematic)
+
+
 if __name__ == "__main__":
+
 
     filenames = glob("line-lists/*.dat")
 
@@ -183,48 +214,35 @@ if __name__ == "__main__":
     for star in stars:
         assert len(star[2]) == len(stars[0][2])
 
+    DEBUG = False
 
-    PHOTOSPHERES = "MARCS"
-    DESCRIPTION = "1D_MARCS_ULB_DEFAULT"
-    EWS = "EW_ULB"
+    combinations = [
+        ("1D_MARCS_ULB_DEFAUT",         "MARCS", "EW_ULB", None),
+        ("1D_MARCS_BOL_DEFAULT",        "MARCS", "EW_BOL", None),
+        
+        #("1D_CK_ULB_DEFAUT",            "Castelli/Kurucz", "EW_ULB", None),
+        #("1D_CK_BOL_DEFAULT",           "Castelli/Kurucz", "EW_BOL", None),
+        
+        ("3D_MASSDENSITY_ULB_DEFAUT",   "Stagger-mass", "EW_ULB", None),
+        ("3D_MASSDENSITY_BOL_DEFAULT",  "Stagger-mass", "EW_BOL", None),
 
+        ("3D_OPTICAL_ULB_DEFAUT",       "Stagger-optical", "EW_ULB", None),
+        ("3D_OPTICAL_BOL_DEFAULT",      "Stagger-optical", "EW_BOL", None),
 
-    analysed_stars = []
-    problematic = []
-    for star in stars:
-        try:
-            analysed = atomic_abundances(star, PHOTOSPHERES, DESCRIPTION, EWS,
-                damping=1)
-        except oracle.synthesis.moog.MOOGException:
-            print("Failed on {}".format(star[0]))
-            problematic.append(star[0])
-            continue
-        else:
-            # Save the star.
-            output_filename = "data/{star}_{descr}.pkl".format(star=star[0],
-                descr=DESCRIPTION)
-            print("Written to output filename {}".format(output_filename))
-            with open(output_filename, "wb") as fp:
-                pickle.dump(analysed, fp, -1)
+        ("3D_HEIGHT_ULB_DEFAUT",        "Stagger-height", "EW_ULB", None),
+        ("3D_HEIGHT_BOL_DEFAULT",       "Stagger-height", "EW_BOL", None),
 
-        analysed_stars.append(analysed)
+    ]
 
+    all_results = []
+    all_problems = []
+    for description, photospheres, ews, kwds in combinations:
+        kwds = {} if kwds is None else kwds
+        r, p = analyse_all_stars(stars, photospheres, description,
+            ews, **kwds)
+        all_results.append(r)
+        all_problems.append(p)
 
-
-    # Calculate 1D MARCS abundances for each star.
-
-    # Calculate 1D Castelli/Kurucz abundances for each star.
-
-    # Calculate <3D> optical abundances for each star.
-
-    # Calculate <3D> mass density abundances for each star.
-
-    # Calculate <3D> Rosseland abundances for each star.
-
-    # Calculate <3D> geometric height abundances for each star.
-
-    # Save all of the results.
-    # (Plots will be produced in some other script).
 
 
 
